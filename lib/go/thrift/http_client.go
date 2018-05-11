@@ -78,7 +78,8 @@ func NewTHttpClient(urlstr string) (TTransport, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &THttpClient{response: response, url: parsedURL}, nil
+	httpHeader := map[string][]string{"Content-Type": []string{"application/x-thrift"}}
+	return &THttpClient{response: response, url: parsedURL, header: httpHeader}, nil
 }
 
 func NewTHttpPostClient(urlstr string) (TTransport, error) {
@@ -86,8 +87,9 @@ func NewTHttpPostClient(urlstr string) (TTransport, error) {
 	if err != nil {
 		return nil, err
 	}
+	httpHeader := map[string][]string{"Content-Type": []string{"application/x-thrift"}}
 	buf := make([]byte, 0, 1024)
-	return &THttpClient{url: parsedURL, requestBuffer: bytes.NewBuffer(buf), header: http.Header{}}, nil
+	return &THttpClient{url: parsedURL, requestBuffer: bytes.NewBuffer(buf), header: httpHeader}, nil
 }
 
 // Set the HTTP Header for this specific Thrift Transport
@@ -184,7 +186,6 @@ func (p *THttpClient) Flush() error {
 	if err != nil {
 		return NewTTransportExceptionFromError(err)
 	}
-	p.header.Add("Content-Type", "application/x-thrift")
 	req.Header = p.header
 	response, err := client.Do(req)
 	if err != nil {
@@ -201,12 +202,11 @@ func (p *THttpClient) Flush() error {
 }
 
 func (p *THttpClient) RemainingBytes() (num_bytes uint64) {
-	len := p.response.ContentLength 
+	len := p.response.ContentLength
 	if len >= 0 {
 		return uint64(len)
 	}
-	
-	const maxSize = ^uint64(0)
-	return maxSize  // the thruth is, we just don't know unless framed is used
-}
 
+	const maxSize = ^uint64(0)
+	return maxSize // the thruth is, we just don't know unless framed is used
+}
